@@ -15,7 +15,12 @@ Covered products:
 - **Producer systems:**
   - Azure SQL : reference and master data (security, issuer, benchmark definitions, corporate actions)
   - PostgreSQL : activity data (positions, transactions, account state)
-- **Intended consumers:** Portfolio Analytics, Risk, Compliance, Data Stewards
+- **Intended consumers:**
+  - Portfolio Analytics (position composition, exposure analysis, attribution)
+  - Risk (concentration, issuer rollup, benchmark tracking)
+  - Compliance (holdings review, regulatory reporting prep)
+  - Data Stewards (reference data quality oversight)
+  - Downstream governed marts and reporting systems (read-only via this suite)
 
 ## Purpose
 
@@ -140,20 +145,21 @@ All gates are blocking. Any failure fails the workflow and blocks publication of
 - Delisted securities are retained in `dim_security` with `listing_status = 'Delisted'` and a populated `termination_date`. The gate asserts that no prior `security_key` observed in historical `fact_position` or `fact_transaction` is missing from `dim_security`.
 
 ### Position-to-transaction tie-out (Reconciliation)
-- For every (`account_key`, `security_key`) with activity in the window, the sum of signed `quantity` from `fact_transaction` between two consecutive position snapshots reconciles to the `fact_position` quantity delta within a tolerance of [TBD: quantity_tolerance_shares] shares. Breaks are logged with the reconciling delta and failing key.
+- For every (`account_key`, `security_key`) with activity in the window, the sum of signed `quantity` from `fact_transaction` between two consecutive position snapshots reconciles to the `fact_position` quantity delta within a tolerance of 0.5 shares. Breaks are logged with the reconciling delta and failing key.
 
 ### Market value check (Policy)
 - For every `fact_position` row, `abs(market_value - quantity * price) / abs(market_value)` is within 1%. The gate guards against stale prices, rounding regressions, and unit-of-measure drift.
 
-### Issuer hierarchy integrity (Policy / Grain)
+### Issuer hierarchy integrity (Policy)
 - Every non-null `parent_issuer_key` in `dim_issuer` resolves to an effective-dated parent row.
 - No cycles in the `issuer_key -> parent_issuer_key` graph, validated at publication time.
 
 ### Benchmark constituent completeness (Policy)
 - For every (`benchmark_key`, effective period), `sum(weight_pct)` is within `100% +/- 0.1%`. The tolerance accommodates rounding at the published weight precision and is enforced per snapshot, not across snapshots.
 
-### Corporate action detection (Policy, warning)
-- Day-over-day absolute change in `quantity` for a given (`account_key`, `security_key`) exceeding [TBD: corporate_action_flag_threshold] without a matching `Split`, `Spinoff`, `Merger`, or `Other` row in `fact_transaction` on or before `as_of_date` is flagged. This gate emits a warning to the runs table rather than blocking, because legitimate rebalances can trip the heuristic. Unreviewed warnings older than [TBD: review_sla_days] escalate to blocking on the subsequent run.
+### Corporate action detection (Policy)
+- Day-over-day absolute change in `quantity` for a given (`account_key`, `security_key`) exceeding 50% day-over-day without a matching `Split`, `Spinoff`, `Merger`, or `Other` row in `fact_transaction` on or before `as_of_date` is flagged. This gate emits a warning to the runs table rather than blocking, because legitimate rebalances can trip the heuristic. Unreviewed warnings older than 5 business days escalate to blocking on the subsequent run.
+- Gate severity: warning with escalation. A warning on first detection; blocking if unreviewed after 5 business days.
 
 ### Freshness (Freshness)
 - Each product meets its freshness SLA stated in the Refresh & SLA table.
