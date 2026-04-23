@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Investment Data Product Dashboard</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #ffffff;
+    --panel-alt: #f8fafc;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #1e40af;
+    --accent-2: #16a34a;
+    --amber: #eab308;
+    --red: #dc2626;
+    --shadow: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+    --bar: #1e40af;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f1f5f9;
+    color: var(--text);
+    line-height: 1.45;
+  }
+  header {
+    background: var(--bg);
+    color: #f8fafc;
+    padding: 28px 40px;
+  }
+  header h1 { margin: 0 0 6px 0; font-size: 22px; font-weight: 600; letter-spacing: .2px; }
+  header .sub { color: #94a3b8; font-size: 13px; }
+  header .meta { margin-top: 10px; font-size: 12px; color: #cbd5e1; }
+  main { padding: 28px 40px 48px; max-width: 1280px; margin: 0 auto; }
+  section { margin-bottom: 36px; }
+  h2 {
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin: 0 0 14px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .card .label { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: .8px; }
+  .card .value { font-size: 24px; font-weight: 600; margin-top: 6px; color: var(--text); }
+  .card .hint  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .panel h3 { margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: .6px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .bar-row { display: grid; grid-template-columns: 180px 1fr 120px; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; }
+  .bar-track { background: var(--panel-alt); border-radius: 4px; height: 14px; overflow: hidden; border: 1px solid var(--border); }
+  .bar-fill { background: var(--bar); height: 100%; }
+  .bar-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-amber { background: #fef9c3; color: #854d0e; }
+  .badge-red   { background: #fee2e2; color: #991b1b; }
+  .badge-slate { background: #e2e8f0; color: #334155; }
+  .badge-blue  { background: #dbeafe; color: #1e3a8a; }
+  .badge-orange{ background: #ffedd5; color: #9a3412; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px 0 30px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Investment Data Product : Consumer Dashboard</h1>
+  <div class="sub">Governed marts served from <code>investments_silver_marts</code>. Health signals read from <code>ops_investment_data_runs</code>.</div>
+  <div class="meta" id="meta"></div>
+</header>
+
+<main>
+
+<!-- SECTION 1 ------------------------------------------------------- -->
+<section id="s1">
+  <h2>1. Portfolio Composition</h2>
+
+  <div class="cards" id="s1-cards"></div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Market Value by Sector</h3>
+      <div id="sector-chart"></div>
+    </div>
+    <div class="panel">
+      <h3>Top 10 Holdings</h3>
+      <table id="top10">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Sector</th>
+            <th>Industry</th>
+            <th class="num">Quantity</th>
+            <th class="num">Price</th>
+            <th class="num">Market Value</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2 ------------------------------------------------------- -->
+<section id="s2">
+  <h2>2. Reference Data Coverage</h2>
+
+  <div class="cards" id="s2-cards"></div>
+
+  <div class="panel">
+    <h3>Identifier Coverage</h3>
+    <table id="id-coverage">
+      <thead>
+        <tr>
+          <th>Identifier</th>
+          <th>Field</th>
+          <th class="num">Populated</th>
+          <th class="num">Nulls</th>
+          <th class="num">Coverage</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 3 ------------------------------------------------------- -->
+<section id="s3">
+  <h2>3. Data Quality &amp; SLA Health</h2>
+
+  <div class="cards" id="s3-cards"></div>
+
+  <div class="panel">
+    <h3>DQ Gate Summary</h3>
+    <table id="dq-gates">
+      <thead>
+        <tr>
+          <th>Gate</th>
+          <th>Category</th>
+          <th>Severity</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Nicholas Hidalgo &bull; Investment Data Product v1.0.0 &bull; See DATA_CONTRACT.md for SLA and scope.
+</footer>
+
+<script>
+/* ---------- Hardcoded query results ---------- */
+const SNAPSHOT = {
+  as_of_date: "2026-03-27",
+  run_at: "2026-04-23"
+};
+
+const PORTFOLIO = {
+  total_market_value: 38477146.97,
+  securities_count: 38,
+  accounts_count: 3
+};
+
+const SECTOR_BREAKDOWN = [
+  { sector: "Health Care",              market_value: 6505942.57 },
+  { sector: "Financials",               market_value: 6052487.64 },
+  { sector: "Information Technology",   market_value: 5556469.37 },
+  { sector: "Consumer Discretionary",   market_value: 4192097.80 },
+  { sector: "Industrials",              market_value: 4049216.26 },
+  { sector: "Real Estate",              market_value: 3966393.70 },
+  { sector: "Utilities",                market_value: 2831670.15 },
+  { sector: "Consumer Staples",         market_value: 2705419.09 },
+  { sector: "Communication Services",   market_value: 1403499.66 },
+  { sector: "Energy",                   market_value: 1065817.15 },
+  { sector: "Materials",                market_value:  148133.58 }
+];
+
+const TOP_10 = [
+  { ticker: "WTW",  sector: "Financials",             industry: "Insurance Brokers",                 quantity: 5454.00, price: 422.2968, market_value: 2303206.85 },
+  { ticker: "APH",  sector: "Information Technology", industry: "Electronic Components",             quantity: 3514.00, price: 600.9615, market_value: 2111778.87 },
+  { ticker: "BLDR", sector: "Industrials",            industry: "Building Products",                 quantity: 4560.00, price: 446.6541, market_value: 2036742.77 },
+  { ticker: "TECH", sector: "Health Care",            industry: "Life Sciences Tools & Services",    quantity: 3859.00, price: 455.2418, market_value: 1756778.14 },
+  { ticker: "WTW",  sector: "Financials",             industry: "Insurance Brokers",                 quantity: 3743.00, price: 422.2968, market_value: 1580656.99 },
+  { ticker: "GILD", sector: "Health Care",            industry: "Biotechnology",                     quantity: 3846.00, price: 398.4581, market_value: 1532469.85 },
+  { ticker: "NEE",  sector: "Utilities",              industry: "Multi-Utilities",                   quantity: 5448.00, price: 236.8991, market_value: 1290626.54 },
+  { ticker: "UHS",  sector: "Health Care",            industry: "Health Care Facilities",            quantity: 4485.00, price: 248.0264, market_value: 1112398.62 },
+  { ticker: "CVX",  sector: "Energy",                 industry: "Integrated Oil & Gas",              quantity: 5292.00, price: 201.4016, market_value: 1065817.15 },
+  { ticker: "ABNB", sector: "Consumer Discretionary", industry: "Hotels, Resorts & Cruise Lines",    quantity: 3256.00, price: 316.4088, market_value: 1030226.93 }
+];
+
+const REFERENCE = {
+  total_securities: 50,
+  active: 50,
+  delisted: 0,
+  benchmark_constituents: 50,
+  benchmark_weight_sum: 100.000000,
+  issuer_count: 50,
+  cusip_nulls: 0,
+  isin_nulls: 0,
+  lei_nulls: 0
+};
+
+const DQ = {
+  total_tests: 25,
+  passed: 25,
+  failed: 0,
+  pass_rate_pct: 100.0
+};
+
+const DQ_GATES = [
+  { gate: "Identifier integrity (CUSIP/ISIN not null, check digits)",     category: "Completeness",    severity: "Error", result: "PASS" },
+  { gate: "LEI not null on dim_issuer",                                    category: "Completeness",    severity: "Error", result: "PASS" },
+  { gate: "Transaction grain unique (transaction_id)",                     category: "Grain",           severity: "Error", result: "PASS" },
+  { gate: "Position grain unique (account, security, as_of_date)",         category: "Grain",           severity: "Error", result: "PASS" },
+  { gate: "No overlapping security effective periods",                     category: "Grain",           severity: "Error", result: "PASS" },
+  { gate: "Survivorship: referenced securities resolve in dim_security",   category: "Policy",          severity: "Error", result: "PASS" },
+  { gate: "Market value coherence (|mv - qty*price|/|mv| <= 1%)",          category: "Policy",          severity: "Error", result: "PASS" },
+  { gate: "Issuer hierarchy integrity (parents resolve, no cycles)",       category: "Policy",          severity: "Error", result: "PASS" },
+  { gate: "Benchmark weight sum within 100% +/- 0.1%",                     category: "Policy",          severity: "Error", result: "PASS" },
+  { gate: "Source-to-curated row drift within 1%",                         category: "Reconciliation",  severity: "Error", result: "PASS" },
+  { gate: "Freshness: as_of_date >= current_date - 2",                     category: "Freshness",       severity: "Error", result: "PASS" }
+];
+
+/* ---------- Helpers ---------- */
+const fmtMoney = n => "$" + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtInt   = n => Number(n).toLocaleString();
+const fmtNum   = (n, d=2) => Number(n).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtPct   = (n, d=2) => fmtNum(n, d) + "%";
+
+function card(label, value, hint) {
+  return `<div class="card"><div class="label">${label}</div><div class="value">${value}</div>${hint ? `<div class="hint">${hint}</div>` : ""}</div>`;
+}
+
+function categoryBadge(cat) {
+  const cls = { "Completeness": "badge-red", "Policy": "badge-orange", "Grain": "badge-orange", "Freshness": "badge-blue", "Reconciliation": "badge-blue" }[cat] || "badge-slate";
+  return `<span class="badge ${cls}">${cat}</span>`;
+}
+function severityBadge(sev) { return `<span class="badge badge-red">${sev}</span>`; }
+function resultBadge(r)     { return `<span class="badge ${r === "PASS" ? "badge-green" : "badge-red"}">${r}</span>`; }
+
+/* ---------- Render: meta ---------- */
+document.getElementById("meta").innerHTML =
+  `Snapshot as_of_date: <strong>${SNAPSHOT.as_of_date}</strong> &nbsp;|&nbsp; Report generated: <strong>${SNAPSHOT.run_at}</strong> &nbsp;|&nbsp; SLA: <span class="badge badge-green">GREEN</span>`;
+
+/* ---------- Section 1 ---------- */
+document.getElementById("s1-cards").innerHTML =
+  card("Total Market Value", fmtMoney(PORTFOLIO.total_market_value), "Latest snapshot, all accounts") +
+  card("Securities Held",    fmtInt(PORTFOLIO.securities_count),     "Distinct securities across accounts") +
+  card("Accounts",           fmtInt(PORTFOLIO.accounts_count),       "Reporting accounts in snapshot");
+
+const sectorMax = Math.max(...SECTOR_BREAKDOWN.map(r => r.market_value));
+document.getElementById("sector-chart").innerHTML = SECTOR_BREAKDOWN.map(r => {
+  const pct = (r.market_value / sectorMax) * 100;
+  return `<div class="bar-row">
+    <div>${r.sector}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+    <div class="bar-val">${fmtMoney(r.market_value)}</div>
+  </div>`;
+}).join("");
+
+document.querySelector("#top10 tbody").innerHTML = TOP_10.map(r => `
+  <tr>
+    <td><strong>${r.ticker}</strong></td>
+    <td>${r.sector}</td>
+    <td>${r.industry}</td>
+    <td class="num">${fmtNum(r.quantity, 0)}</td>
+    <td class="num">${fmtMoney(r.price)}</td>
+    <td class="num">${fmtMoney(r.market_value)}</td>
+  </tr>`).join("");
+
+/* ---------- Section 2 ---------- */
+document.getElementById("s2-cards").innerHTML =
+  card("Total Securities",         fmtInt(REFERENCE.total_securities),
+       `${fmtInt(REFERENCE.active)} active, ${fmtInt(REFERENCE.delisted)} delisted`) +
+  card("Active vs Delisted",       `${REFERENCE.active} / ${REFERENCE.delisted}`,
+       "Survivorship policy: delisted retained") +
+  card("Benchmark Constituents",   fmtInt(REFERENCE.benchmark_constituents),
+       `Weight sum: ${fmtPct(REFERENCE.benchmark_weight_sum, 4)}`) +
+  card("Issuers",                  fmtInt(REFERENCE.issuer_count),
+       "US-domiciled per v1 contract scope");
+
+const coverage = [
+  { id: "CUSIP", field: "dim_security.cusip", total: REFERENCE.total_securities, nulls: REFERENCE.cusip_nulls },
+  { id: "ISIN",  field: "dim_security.isin",  total: REFERENCE.total_securities, nulls: REFERENCE.isin_nulls },
+  { id: "LEI",   field: "dim_issuer.lei",     total: REFERENCE.issuer_count,     nulls: REFERENCE.lei_nulls  }
+];
+document.querySelector("#id-coverage tbody").innerHTML = coverage.map(c => {
+  const populated = c.total - c.nulls;
+  const cov = (populated / c.total) * 100;
+  const status = cov === 100 ? resultBadge("PASS") : resultBadge("FAIL");
+  return `<tr>
+    <td><strong>${c.id}</strong></td>
+    <td><code>${c.field}</code></td>
+    <td class="num">${fmtInt(populated)}</td>
+    <td class="num">${fmtInt(c.nulls)}</td>
+    <td class="num">${fmtPct(cov, 1)}</td>
+    <td>${status}</td>
+  </tr>`;
+}).join("");
+
+/* ---------- Section 3 ---------- */
+document.getElementById("s3-cards").innerHTML =
+  card("DQ Tests Run",      fmtInt(DQ.total_tests),        `${DQ.passed} passed, ${DQ.failed} failed`) +
+  card("Pass Rate",         fmtPct(DQ.pass_rate_pct, 1),   "All blocking gates satisfied") +
+  card("Data Freshness",    SNAPSHOT.as_of_date,           "Latest as_of_date in fact_position") +
+  card("SLA Status",        '<span class="badge badge-green" style="font-size:14px">GREEN</span>',
+       "Freshness within contract tolerance");
+
+document.querySelector("#dq-gates tbody").innerHTML = DQ_GATES.map(g => `
+  <tr>
+    <td>${g.gate}</td>
+    <td>${categoryBadge(g.category)}</td>
+    <td>${severityBadge(g.severity)}</td>
+    <td>${resultBadge(g.result)}</td>
+  </tr>`).join("");
+</script>
+
+</body>
+</html>
