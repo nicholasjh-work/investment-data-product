@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph SRC["Source Systems"]
+        A[(Azure SQL<br/>investments_ref)]
+        P[(PostgreSQL<br/>investments_act)]
+    end
+
+    subgraph DBT["dbt on PostgreSQL"]
+        S[Staging<br/>views]
+        I[Intermediate<br/>views]
+        M[Marts<br/>tables]
+    end
+
+    OPS[(ops_investment_data_runs<br/>run log + SLA status)]
+    BI[Power BI<br/>semantic model]
+
+    A --> S
+    P --> S
+    S --> I
+    I --> M
+    M --> BI
+    M -.-> OPS
+    OPS --> BI
+
+    classDef src fill:#0078D4,stroke:#003a66,color:#ffffff;
+    classDef dbt fill:#FF694A,stroke:#8a2b0f,color:#ffffff;
+    classDef ops fill:#1e293b,stroke:#0f172a,color:#ffffff;
+    classDef bi  fill:#F2C811,stroke:#8a7300,color:#000000;
+    class A,P src;
+    class S,I,M dbt;
+    class OPS ops;
+    class BI bi;
