@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: azure_sql_ref
+    description: "Simulated Azure SQL reference data (issuers, securities, benchmark, prices)."
+    database: investment_data
+    schema: investments_ref
+    tables:
+      - name: dim_issuer
+        description: "Issuer master with Type 2 effective dating and parent hierarchy."
+        loaded_at_field: source_updated_at
+      - name: dim_security
+        description: "Security master with Type 2 effective dating."
+        loaded_at_field: source_updated_at
+      - name: benchmark_constituent
+        description: "S&P 500 benchmark membership bridge with effective dating."
+        loaded_at_field: source_updated_at
+      - name: security_price
+        description: "Daily closing prices per security."
+        loaded_at_field: source_updated_at
+
+  - name: postgres_act
+    description: "Simulated PostgreSQL activity data (accounts, positions, transactions)."
+    database: investment_data
+    schema: investments_act
+    tables:
+      - name: account
+        description: "Account dimension from the activity system."
+        loaded_at_field: source_updated_at
+      - name: position
+        description: "End-of-day account-level holdings."
+        loaded_at_field: source_updated_at
+      - name: transaction
+        description: "Executed trades and capital actions."
+        loaded_at_field: source_updated_at
